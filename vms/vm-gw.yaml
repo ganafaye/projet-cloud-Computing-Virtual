@@ -4,7 +4,7 @@ metadata:
   name: vm-gw
   namespace: ganafaye-dev
 spec:
-  runStrategy: Always
+  runStrategy: Manual
   template:
     spec:
       domain:
