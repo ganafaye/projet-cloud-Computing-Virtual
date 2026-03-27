@@ -44,3 +44,21 @@ spec:
                 - nodejs
                 - npm
                 - mysql-client
+              runcmd:
+                - ip addr add 192.168.100.10/24 dev lo:1
+                - ip link set lo:1 up
+                - systemctl start nginx
+                - mkdir -p /opt/app
+                - cd /opt/app && npm init -y && npm install express
+                - cat > server.js << 'EOL'
+                  const express = require('express');
+                  const app = express();
+                  const PORT = 3000;
+                  app.get('/', (req, res) => {
+                    res.send('<h1>VM-WEB DMZ</h1><p>IP: 192.168.100.10</p><p>Architecture 3-Tiers</p>');
+                  });
+                  app.listen(PORT, '0.0.0.0', () => {
+                    console.log('Serveur démarré sur le port ' + PORT);
+                  });
+                  EOL
+                - node /opt/app/server.js &
