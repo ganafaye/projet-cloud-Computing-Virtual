@@ -1,0 +1,200 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nodejs-app
+  namespace: ganafaye-dev
+  labels:
+    app: nodejs
+spec:
+  containers:
+    - name: nodejs
+      image: node:18-alpine
+      env:
+        - name: NPM_CONFIG_CACHE
+          value: /tmp/.npm
+        - name: MYSQL_HOST
+          value: mysql-service
+        - name: MYSQL_USER
+          value: webapp
+        - name: MYSQL_PASSWORD
+          value: password
+        - name: MYSQL_DATABASE
+          value: webapp
+      command: 
+        - sh
+        - -c
+        - |
+          mkdir -p /tmp/app /tmp/.npm
+          cd /tmp/app
+          npm init -y
+          npm install express mysql2
+          
+          cat > server.js << 'EOL'
+          const express = require('express');
+          const mysql = require('mysql2');
+          const app = express();
+          const PORT = 3000;
+          
+          // Connexion MySQL
+          const db = mysql.createConnection({
+            host: process.env.MYSQL_HOST || 'mysql-service',
+            user: process.env.MYSQL_USER || 'webapp',
+            password: process.env.MYSQL_PASSWORD || 'password',
+            database: process.env.MYSQL_DATABASE || 'webapp'
+          });
+          
+          // Tester la connexion MySQL
+          db.connect((err) => {
+            if (err) {
+              console.error('❌ Erreur connexion MySQL:', err.message);
+            } else {
+              console.log('✅ Connecté à MySQL');
+            }
+          });
+          
+          // Page d'accueil
+          app.get('/', async (req, res) => {
+            // Récupérer les données de la base
+            db.query('SELECT * FROM messages ORDER BY id DESC', (err, results) => {
+              let messagesHtml = '';
+              if (err) {
+                messagesHtml = '<p style="color: red;">❌ Erreur chargement des messages</p>';
+                console.error(err);
+              } else if (results.length === 0) {
+                messagesHtml = '<p>Aucun message pour le moment.</p>';
+              } else {
+                messagesHtml = results.map(msg => `
+                  <div style="background: rgba(255,255,255,0.1); padding: 10px; margin: 10px 0; border-radius: 10px;">
+                    <strong>📝 Message #${msg.id}</strong><br>
+                    ${msg.content}<br>
+                    <small>📅 ${new Date(msg.created_at).toLocaleString()}</small>
+                  </div>
+                `).join('');
+              }
+              
+              res.send(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                  <title>Architecture 3-Tiers</title>
+                  <style>
+                    body {
+                      font-family: 'Segoe UI', Arial, sans-serif;
+                      text-align: center;
+                      margin-top: 50px;
+                      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                      color: white;
+                      min-height: 100vh;
+                    }
+                    .container {
+                      background: rgba(255,255,255,0.15);
+                      border-radius: 20px;
+                      padding: 30px;
+                      max-width: 800px;
+                      margin: 0 auto;
+                      backdrop-filter: blur(10px);
+                    }
+                    h1 { font-size: 2.5em; margin-bottom: 10px; }
+                    .info { background: rgba(0,0,0,0.3); border-radius: 10px; padding: 15px; margin: 20px 0; text-align: left; }
+                    .info p { margin: 8px 0; }
+                    .status { color: #4ade80; font-weight: bold; }
+                    .messages { margin: 20px 0; text-align: left; }
+                    .message-card {
+                      background: rgba(255,255,255,0.1);
+                      padding: 15px;
+                      margin: 10px 0;
+                      border-radius: 10px;
+                      border-left: 4px solid #4ade80;
+                    }
+                    .message-card small { color: #ccc; font-size: 0.8em; }
+                    hr { border-color: rgba(255,255,255,0.3); }
+                    .add-form { margin: 20px 0; }
+                    input, button {
+                      padding: 10px;
+                      border-radius: 8px;
+                      border: none;
+                      margin: 5px;
+                    }
+                    input { width: 60%; background: white; color: #333; }
+                    button {
+                      background: #4ade80;
+                      color: #333;
+                      cursor: pointer;
+                      font-weight: bold;
+                    }
+                    button:hover { background: #22c55e; }
+                  </style>
+                </head>
+                <body>
+                  <div class="container">
+                    <h1>🌐 Architecture 3-Tiers</h1>
+                    <p>Application Node.js + MySQL</p>
+                    
+                    <div class="info">
+                      <p>📡 <strong>Infrastructure:</strong></p>
+                      <p>• VM-GW (DMZ): 192.168.100.1 | (LAN): 192.168.10.1</p>
+                      <p>• VM-WEB: 192.168.100.10</p>
+                      <p>• MySQL: ${process.env.MYSQL_HOST}</p>
+                      <p>🔌 <strong>Statut MySQL:</strong> <span class="status">✅ Connecté</span></p>
+                    </div>
+                    
+                    <div class="add-form">
+                      <h3>📝 Ajouter un message</h3>
+                      <form action="/add" method="get">
+                        <input type="text" name="message" placeholder="Votre message..." required>
+                        <button type="submit">Envoyer</button>
+                      </form>
+                    </div>
+                    
+                    <div class="messages">
+                      <h3>💬 Messages récents</h3>
+                      ${messagesHtml}
+                    </div>
+                    
+                    <hr>
+                    <small>Projet Cloud Computing - Master SI | Déploiement GitOps</small>
+                  </div>
+                </body>
+                </html>
+              `);
+            });
+          });
+          
+          // Ajouter un message
+          app.get('/add', (req, res) => {
+            const message = req.query.message;
+            if (message && message.trim()) {
+              db.query('INSERT INTO messages (content) VALUES (?)', [message], (err) => {
+                if (err) {
+                  console.error(err);
+                  res.send('<h3>❌ Erreur lors de l\'ajout</h3><a href="/">Retour</a>');
+                } else {
+                  res.redirect('/');
+                }
+              });
+            } else {
+              res.redirect('/');
+            }
+          });
+          
+          app.listen(PORT, '0.0.0.0', () => {
+            console.log('✅ Serveur Node.js démarré sur le port ' + PORT);
+            console.log('📡 Connexion MySQL: ' + process.env.MYSQL_HOST);
+          });
+          EOL
+          
+          node server.js
+      ports:
+        - containerPort: 3000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nodejs-service
+  namespace: ganafaye-dev
+spec:
+  selector:
+    app: nodejs
+  ports:
+    - port: 3000
+      targetPort: 3000
