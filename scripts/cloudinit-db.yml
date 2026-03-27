@@ -1,0 +1,16 @@
+#cloud-config
+user: ubuntu
+password: ubuntu
+chpasswd:
+  expire: false
+ssh_pwauth: true
+packages:
+  - mysql-server
+runcmd:
+  - systemctl start mysql
+  - mysql -e "CREATE DATABASE webapp;"
+  - mysql -e "CREATE USER 'webapp'@'%' IDENTIFIED BY 'password';"
+  - mysql -e "GRANT ALL PRIVILEGES ON webapp.* TO 'webapp'@'%';"
+  - mysql -e "FLUSH PRIVILEGES;"
+  - sed -i 's/127.0.0.1/0.0.0.0/g' /etc/mysql/mysql.conf.d/mysqld.cnf
+  - systemctl restart mysql

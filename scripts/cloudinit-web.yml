@@ -1,0 +1,17 @@
+#cloud-config
+user: ubuntu
+password: ubuntu
+chpasswd:
+  expire: false
+ssh_pwauth: true
+packages:
+  - nginx
+  - nodejs
+  - npm
+  - mysql-client
+runcmd:
+  - systemctl start nginx
+  - mkdir -p /opt/app
+  - cd /opt/app && npm init -y && npm install express
+  - echo "const express = require('express'); const app = express(); app.get('/', (req, res) => res.send('<h1>VM-WEB</h1>')); app.listen(3000, '0.0.0.0');" > /opt/app/server.js
+  - node /opt/app/server.js &

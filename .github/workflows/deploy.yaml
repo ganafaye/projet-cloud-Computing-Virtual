@@ -1,0 +1,63 @@
+name: Deploy Infrastructure
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'vms/**'
+      - 'mysql-deployment.yaml'
+
+env:
+  OPENSHIFT_SERVER: ${{ secrets.OPENSHIFT_SERVER }}
+  OPENSHIFT_TOKEN: ${{ secrets.OPENSHIFT_TOKEN }}
+  NAMESPACE: ganafaye-dev
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Install oc
+        run: |
+          curl -LO https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-client-linux.tar.gz
+          tar xzf openshift-client-linux.tar.gz
+          sudo mv oc /usr/local/bin/
+      
+      - name: Install virtctl
+        run: |
+          curl -LO https://github.com/kubevirt/kubevirt/releases/download/v1.7.1/virtctl-v1.7.1-linux-amd64
+          chmod +x virtctl-v1.7.1-linux-amd64
+          sudo mv virtctl-v1.7.1-linux-amd64 /usr/local/bin/virtctl
+      
+      - name: Login
+        run: |
+          oc login --server=${{ env.OPENSHIFT_SERVER }} --token=${{ env.OPENSHIFT_TOKEN }} --insecure-skip-tls-verify=true
+          oc project ${{ env.NAMESPACE }}
+      
+      - name: Deploy VMs
+        run: |
+          oc apply -f vms/vm-gw.yaml
+          oc apply -f vms/vm-web.yaml
+      
+      - name: Deploy MySQL
+        run: oc apply -f mysql-deployment.yaml
+      
+      - name: Start VMs
+        run: |
+          /usr/local/bin/virtctl start vm-gw -n ${{ env.NAMESPACE }} || true
+          /usr/local/bin/virtctl start vm-web -n ${{ env.NAMESPACE }} || true
+      
+      - name: Wait
+        run: sleep 90
+      
+      - name: Check
+        run: |
+          echo "📊 VMs:"
+          oc get vm -n ${{ env.NAMESPACE }}
+          echo ""
+          echo "📊 VM Instances:"
+          oc get vmi -n ${{ env.NAMESPACE }}
+          echo ""
+          echo "📊 MySQL:"
+          oc get pods -n ${{ env.NAMESPACE }} -l app=mysql
