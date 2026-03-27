@@ -16,38 +16,6 @@ Déploiement automatisé d'une infrastructure 3-Tiers sur OpenShift Virtualizati
 
 L'application est accessible publiquement via HTTPS :
 
-Parfait ! Mettons à jour le README avec toutes les informations du projet.
-
----
-
-## 📝 MISE À JOUR DU README
-
-```bash
-cd ~/Bureau/CoudComp_Virtualisation/projet-cloud-Computing-Virtual
-```
-
-### README.md complet
-
-```bash
-cat > README.md << 'EOF'
-# Projet Cloud Computing - Architecture 3-Tiers sur OpenShift
-
-## 📋 Description
-Déploiement automatisé d'une infrastructure 3-Tiers sur OpenShift Virtualization avec approche GitOps.
-
-## 🏗️ Architecture
-
-| Composant | Type | IP / Service | Rôle |
-|-----------|------|--------------|------|
-| **VM-GW** | Virtual Machine | 192.168.100.1 (DMZ) / 192.168.10.1 (LAN) | Passerelle / Firewall (iptables) |
-| **VM-WEB** | Virtual Machine | 192.168.100.10 (DMZ) | Serveur Web (Nginx + Node.js) |
-| **MySQL** | Pod | mysql-service:3306 | Base de données |
-| **Node.js App** | Pod | nodejs-service:3000 | Application web |
-
-## 🌐 Accès à l'Application
-
-L'application est accessible publiquement via HTTPS :
-
 ```
 https://app-projet-cloud-virtual-gana-ganafaye-dev.apps.rm2.thpm.p1.openshiftapps.com
 ```
@@ -72,30 +40,9 @@ https://app-projet-cloud-virtual-gana-ganafaye-dev.apps.rm2.thpm.p1.openshiftapp
 
 ## 📂 Structure du Projet
 
-```
-projet-cloud-Computing-Virtual/
-├── .github/workflows/
-│   ├── test.yaml              # Workflow de test
-│   └── deploy.yaml            # Workflow de déploiement
-├── vms/
-│   ├── vm-gw.yaml             # Template VM Passerelle
-│   └── vm-web.yaml            # Template VM Web
-├── networks/
-│   ├── nad-dmz.yaml           # Réseau DMZ (192.168.100.0/24)
-│   └── nad-lan.yaml           # Réseau LAN (192.168.10.0/24)
-├── scripts/
-│   ├── cloudinit-gw.yml       # Script cloud-init VM-GW
-│   ├── cloudinit-web.yml      # Script cloud-init VM-WEB
-│   └── cloudinit-db.yml       # Script cloud-init VM-DB
-├── app/
-│   ├── server.js              # Application Node.js
-│   └── package.json           # Dépendances
-├── database/
-│   └── schema.sql             # Structure MySQL
-├── mysql-deployment.yaml      # Déploiement MySQL
-├── nodejs-app-mysql.yaml      # Déploiement Node.js
-└── README.md                  # Documentation
-```
+
+<img width="339" height="678" alt="Capture d’écran du 2026-03-27 18-17-42" src="https://github.com/user-attachments/assets/9736fb74-1e93-47f9-8839-8246edcaf4fc" />
+
 
 ## 🚀 Déploiement Automatisé
 
@@ -182,12 +129,7 @@ virtctl console vm-gw -n ganafaye-dev
 ip addr show | grep 192.168
 ```
 
-### Voir les IPs dans VM-WEB
-```bash
-virtctl console vm-web -n ganafaye-dev
-# ubuntu / ubuntu
-ip addr show | grep 192.168
-```
+
 
 ### Tester MySQL
 ```bash
@@ -197,13 +139,16 @@ oc exec -it $(oc get pods -n ganafaye-dev -l app=mysql -o name) -- mysql -u weba
 ## 📸 Captures d'écran
 
 ### Workflow GitHub Actions
-![Workflow](docs/workflow.png)
+<img width="1762" height="751" alt="image" src="https://github.com/user-attachments/assets/06203e80-8245-44ea-8897-dce498d80e98" />
+
 
 ### Application Web
-![Application](docs/app.png)
+<img width="1920" height="1048" alt="Capture d’écran du 2026-03-27 17-51-25" src="https://github.com/user-attachments/assets/20937865-331c-449e-9a9a-9ca3a842b79c" />
+
 
 ### VMs en cours d'exécution
-![VMs](docs/vms.png)
+<img width="1920" height="1048" alt="image" src="https://github.com/user-attachments/assets/027e10f3-7138-42c1-8645-acf159f8b552" />
+
 
 ## 👨‍💻 Auteur
 
